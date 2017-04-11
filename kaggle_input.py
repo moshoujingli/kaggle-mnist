@@ -1,7 +1,7 @@
 
 import numpy as np
 
-def build_input(data_path):
+def build_input_train(data_path):
     result = []
     with open(data_path) as train_file:
         for line in train_file:
@@ -10,5 +10,17 @@ def build_input(data_path):
                 continue
             tag = int(lineContent[0])
             img = np.array([int(i) for i in lineContent[1:]]).reshape((28,28,1))
+            result.append((tag,img))
+    return result
+
+def build_input_eval(data_path):
+    result = []
+    with open(data_path) as train_file:
+        for line in train_file:
+            lineContent = line.split(',')
+            if lineContent[0] == 'pixel0':
+                continue
+            img = np.array([int(i) for i in lineContent]).reshape((28,28,1))
+            tag = 0
             result.append((tag,img))
     return result
