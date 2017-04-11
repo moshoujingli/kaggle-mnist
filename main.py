@@ -35,9 +35,14 @@ def init_weights(shape, name):
 
 def defModel():
   # in conv1 pool1 conv2 pool2 h1 o
-  X = tf.placeholder("float", [None, 28, 28, 1])
+  X = tf.placeholder(tf.float32, [None, 28, 28, 1])
   Y = tf.placeholder(tf.int64)
   #init vars
+  drop_out_input = tf.placeholder(tf.float32)
+  drop_out_hidden = tf.placeholder(tf.float32)
+
+  with tf.name_scope("drop_out"):
+    X = tf.nn.dropout(X,drop_out_input)
 
   with tf.name_scope("conv1"):
     W_conv1 = init_weights(shape = [5,5,1,32], name = "W_conv1")
@@ -65,16 +70,17 @@ def defModel():
     pool_shape = pool2.get_shape().as_list()
     reshape = tf.reshape(tensor = pool2,shape =[-1,  7*7*64],name="reshape_pool")
     hidden = tf.nn.relu(tf.matmul(reshape, W_fc1) + b_fc1)
+    hidden = tf.nn.dropout(hidden,drop_out_hidden)
   
   with tf.name_scope("out"):
     W_fc2 = init_weights(shape = [512,10], name = "W_fc2")
     b_fc2 = init_weights(shape = [10], name = "b_fc2")
     logits = tf.matmul(hidden,W_fc2) + b_fc2
     l2_loss = tf.nn.l2_loss(W_conv1) + tf.nn.l2_loss(W_conv2) + tf.nn.l2_loss(b_fc1) + tf.nn.l2_loss(b_fc2)
-  return X,Y,logits,l2_loss
+  return X,Y,logits,l2_loss,drop_out_input,drop_out_hidden
 
 def getTrainOps():
-  X,Y,logits,l2_loss = defModel()
+  X,Y,logits,l2_loss,drop_out_input,drop_out_hidden = defModel()
   with tf.name_scope("loss"):
     loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=Y, logits=logits))
@@ -83,16 +89,16 @@ def getTrainOps():
     tf.summary.scalar('loss/l2_loss',l2_loss)
   with tf.name_scope('precision_log'):
     tf.summary.scalar('precision', tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits,1),Y), tf.float32)))
-  return X,Y,tf.train.AdamOptimizer(1e-4).minimize(loss) 
+  return X,Y,tf.train.AdamOptimizer(1e-4).minimize(loss) ,drop_out_input,drop_out_hidden
 
 def getEvalOps():
-  X,Y,logits,l2_loss = defModel()
-  return X,Y,tf.argmax(logits,1)
+  X,Y,logits,l2_loss,drop_out_input,drop_out_hidden = defModel()
+  return X,Y,tf.argmax(logits,1),drop_out_input,drop_out_hidden
 
 def train(hps):
   """Training loop."""
   train_data = kaggle_input.build_input_train(FLAGS.train_data_path)
-  X,Y,train_op = getTrainOps()
+  X,Y,train_op,drop_out_input,drop_out_hidden = getTrainOps()
   with tf.Session() as sess:
     init = tf.global_variables_initializer()
     logDirPath = FLAGS.log_root
@@ -104,16 +110,16 @@ def train(hps):
     for i in range(4000):
       batch = random.sample(train_data,hps.batch_size)
       images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
-      sess.run(train_op,feed_dict={X:images,Y:labels})
+      sess.run(train_op,feed_dict={X:images,Y:labels,drop_out_input:0.8,drop_out_hidden:0.7})
       if i%100 == 0:
-        result = sess.run(merged, feed_dict={X: images, Y: labels})
+        result = sess.run(merged, feed_dict={X:images,Y:labels,drop_out_input:1,drop_out_hidden:1})
         writer.add_summary(result,i)
     saver.save(sess,FLAGS.model_param_path)
     writer.close()
 
 def evaluate(hps):
   eval_data = kaggle_input.build_input_eval(FLAGS.eval_data_path)
-  X,Y,evalResult = getEvalOps()
+  X,Y,evalResult,drop_out_input,drop_out_hidden = getEvalOps()
   with tf.Session() as sess:
     saver = tf.train.Saver()
     saver.restore(sess,FLAGS.model_param_path)
@@ -122,7 +128,7 @@ def evaluate(hps):
     for i in range(loopCount+1):
       batch = eval_data[i*hps.batch_size:(i+1)*hps.batch_size]
       images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
-      result+=sess.run(evalResult,feed_dict={X:images,Y:labels}).tolist()
+      result+=sess.run(evalResult,feed_dict={X:images,Y:labels,drop_out_input:1,drop_out_hidden:1}).tolist()
     with open(FLAGS.eval_dir+'/result.csv','wb') as outFile:
       outFile.write("ImageId,Label\n")
       for index, item in enumerate(result):
