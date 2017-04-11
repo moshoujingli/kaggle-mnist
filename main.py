@@ -16,7 +16,7 @@ tf.app.flags.DEFINE_string('model_param_path', './model/',
 tf.app.flags.DEFINE_integer('image_size', 32, 'Image side length.')
 tf.app.flags.DEFINE_string('train_dir', '',
                            'Directory to keep training outputs.')
-tf.app.flags.DEFINE_string('eval_dir', '',
+tf.app.flags.DEFINE_string('eval_dir', './recognize_result',
                            'Directory to keep eval outputs.')
 tf.app.flags.DEFINE_integer('eval_batch_count', 50,
                             'Number of batches to eval.')
@@ -101,7 +101,7 @@ def train(hps):
     merged = tf.summary.merge_all()
     sess.run(init)
     print hps.batch_size
-    for i in range(400):
+    for i in range(4000):
       batch = random.sample(train_data,hps.batch_size)
       images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
       sess.run(train_op,feed_dict={X:images,Y:labels})
@@ -117,12 +117,18 @@ def evaluate(hps):
   with tf.Session() as sess:
     saver = tf.train.Saver()
     saver.restore(sess,FLAGS.model_param_path)
-    images,labels = np.array([img for label,img in eval_data]),np.array([label for label,img in eval_data])
-    result = sess.run(evalResult,feed_dict={X:images,Y:labels})
-    k=1
-    for i in result:
-      print k,i
-      k+=1
+    loopCount = len(eval_data)//hps.batch_size
+    result = []
+    for i in range(loopCount+1):
+      batch = eval_data[i*hps.batch_size:(i+1)*hps.batch_size]
+      images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
+      result+=sess.run(evalResult,feed_dict={X:images,Y:labels}).tolist()
+    with open(FLAGS.eval_dir+'/result.csv','wb') as outFile:
+      outFile.write("ImageId,Label\n")
+      for index, item in enumerate(result):
+        outFile.write("%d,%d\n"%(index+1,item))
+        
+
 
 
 def main(_):
