@@ -78,10 +78,10 @@ def getEvalOps():
 
 
 
-class LeNet(object):
-  """docstring for LeNet"""
+class SimpleCNN(object):
+  """docstring for SimpleCNN"""
   def __init__(self, hps):
-      super(LeNet, self).__init__()
+      super(SimpleCNN, self).__init__()
       self.hps = hps
   
   def train(self,train_data):

@@ -32,13 +32,13 @@ tf.app.flags.DEFINE_integer('num_gpus', 0,
 def train(hps):
   """Training loop."""
   train_data = kaggle_input.build_input_train(FLAGS.train_data_path)
-  model = cnn_model.LeNet(hps)
+  model = cnn_model.SimpleCNN(hps)
   model.train(train_data)
 
 def evaluate(hps):
   pass
   eval_data = kaggle_input.build_input_eval(FLAGS.eval_data_path)
-  model = cnn_model.LeNet(hps)
+  model = cnn_model.SimpleCNN(hps)
   result = model.eval(eval_data)
   with open(FLAGS.eval_dir+'/result.csv','wb') as outFile:
     outFile.write("ImageId,Label\n")
