@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import kaggle_input
-import cnn_model
+import nn_model as net_model
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('dataset', 'kaggle', 'kaggle or mnist.')
@@ -32,13 +32,13 @@ tf.app.flags.DEFINE_integer('num_gpus', 0,
 def train(hps):
   """Training loop."""
   train_data = kaggle_input.build_input_train(FLAGS.train_data_path)
-  model = cnn_model.SimpleCNN(hps)
+  model = net_model.SimpleNN(hps)
   model.train(train_data)
 
 def evaluate(hps):
   pass
   eval_data = kaggle_input.build_input_eval(FLAGS.eval_data_path)
-  model = cnn_model.SimpleCNN(hps)
+  model = net_model.SimpleNN(hps)
   result = model.eval(eval_data)
   with open(FLAGS.eval_dir+'/result.csv','wb') as outFile:
     outFile.write("ImageId,Label\n")
@@ -61,7 +61,7 @@ def main(_):
   if FLAGS.batch_size_assigned >0:
     batch_size = FLAGS.batch_size_assigned
 
-  hps = cnn_model.HParams(batch_size=batch_size,
+  hps = net_model.HParams(batch_size=batch_size,
                              min_lrn_rate=0.0001,
                              lrn_rate=0.1,
                              weight_decay_rate=0.0002,

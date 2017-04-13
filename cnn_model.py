@@ -95,7 +95,7 @@ class SimpleCNN(object):
       merged = tf.summary.merge_all()
       sess.run(init)
       print self.hps.batch_size
-      for i in range(1):
+      for i in range(4000):
         batch = random.sample(train_data[:-2*self.hps.batch_size],self.hps.batch_size)
         images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
         sess.run(train_op,feed_dict={X:images,Y:labels,drop_out_input:0.5,drop_out_hidden:0.6})
