@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 from collections import namedtuple
 import random
-
+# 0.99143
 HParams = namedtuple('HParams',
-                     'batch_size, min_lrn_rate, lrn_rate, '
+                     'iter_count,batch_size, min_lrn_rate, lrn_rate, '
                      'weight_decay_rate, '
                      ' optimizer')
 FLAGS = tf.app.flags.FLAGS
@@ -95,7 +95,7 @@ class SimpleCNN(object):
       merged = tf.summary.merge_all()
       sess.run(init)
       print self.hps.batch_size
-      for i in range(4000):
+      for i in range(self.hps.iter_count):
         batch = random.sample(train_data[:-2*self.hps.batch_size],self.hps.batch_size)
         images,labels = np.array([img for label,img in batch]),np.array([label for label,img in batch])
         sess.run(train_op,feed_dict={X:images,Y:labels,drop_out_input:0.5,drop_out_hidden:0.6})

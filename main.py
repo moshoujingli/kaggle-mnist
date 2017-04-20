@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import kaggle_input
-import nn_model as net_model
+import cnn_model as net_model
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('dataset', 'kaggle', 'kaggle or mnist.')
@@ -29,16 +29,19 @@ tf.app.flags.DEFINE_string('log_root', './tensor_board_data',
 tf.app.flags.DEFINE_integer('num_gpus', 0,
                             'Number of gpus used for training. (0 or 1)')
 
+tf.app.flags.DEFINE_integer('iter_count', 4000,
+                            'Number of iteration count')
+
 def train(hps):
   """Training loop."""
   train_data = kaggle_input.build_input_train(FLAGS.train_data_path)
-  model = net_model.SimpleNN(hps)
+  model = net_model.SimpleCNN(hps)
   model.train(train_data)
 
 def evaluate(hps):
   pass
   eval_data = kaggle_input.build_input_eval(FLAGS.eval_data_path)
-  model = net_model.SimpleNN(hps)
+  model = net_model.SimpleCNN(hps)
   result = model.eval(eval_data)
   with open(FLAGS.eval_dir+'/result.csv','wb') as outFile:
     outFile.write("ImageId,Label\n")
@@ -61,7 +64,8 @@ def main(_):
   if FLAGS.batch_size_assigned >0:
     batch_size = FLAGS.batch_size_assigned
 
-  hps = net_model.HParams(batch_size=batch_size,
+  hps = net_model.HParams(iter_count = FLAGS.iter_count,
+                            batch_size=batch_size,
                              min_lrn_rate=0.0001,
                              lrn_rate=0.1,
                              weight_decay_rate=0.0002,
